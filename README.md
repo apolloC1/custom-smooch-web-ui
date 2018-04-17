@@ -123,22 +123,25 @@ We can create an input element in our HTML to accept plain text user messages:
 Now, we'll call the `Smooch.sendMessage` function each time the enter key is pressed while our input element is active. Add the following after you Smooch.init call:
 
 ```javascript
-var inputElement = document.getElementById('text-input');
 
-inputElement.onkeyup = function(e) {
-  if (e.key === 'Enter') {
-    Smooch.sendMessage(inputElement.value)
-      .then(function() {
-        inputElement.value = '';
+Smooch.init({ appId: appId, embedded: true }).then(function () {
+  var inputElement = document.getElementById('text-input');
+  inputElement.onkeyup = function(e) {
+    if (e.key === 'Enter') {
+      Smooch.sendMessage(inputElement.value).then(function() {
+          inputElement.value = '';
 
-        // update the user ID
-        displayUserId(Smooch.getUser());
+          // update the user ID
+          displayUserId(Smooch.getUser());
       });
+    }
   }
-}
+  
+  //...
+});
 ```
 
-To confirm that messages are sent, open the Logs for the app are using in the [Smooch dashboard](https://app.smooch.io/).
+Note that this code is being run after `Smooch.init` has finished. To confirm that messages are sent, open the Logs for the app are using in the [Smooch dashboard](https://app.smooch.io/).
 
 ## Receive messages
 
@@ -149,9 +152,15 @@ In order to update the UI with the content of new messages, we can use Smooch's 
 We're going to call our `displayMessage` function when message events occur. Somewhere in your JavaScript, below where the SDK is loaded, add:
 
 ```javascript
-Smooch.on('message:sent', displayMessage);
-Smooch.on('message:received', displayMessage);
+Smooch.init({ appId: appId, embedded: true }).then(() => {
+    Smooch.on('message:sent', displayMessage);
+    Smooch.on('message:received', displayMessage);
+
+    // ...
+});
 ```
+
+Note again that we're making sure `Smooch.init` completes successfully before creating these event subscriptions.
 
 ## Wrap up
 
@@ -164,70 +173,4 @@ Now you might want to consider how you'll represent more complex messages and ac
 - [conversation extensions](https://docs.smooch.io/guide/conversation-extensions/)
 - [conversation activity](https://docs.smooch.io/rest/#conversation-activity)
 
-Here's the complete code for this guide:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Document</title>
-</head>
-<body>
-  <div id="no-display" style="display:none;"></div>
-  <p>User ID: <span id="user-id"></span></p>
-  <ul id="conversation"></ul>
-  <input type="text" id="text-input" placeholder="text">
-
-  <script>
-  var appId = '<your-app-id>';
-  var inputElement = document.getElementById('text-input');
-
-  !function(e,n,t,r){
-    function o(){try{var e;if((e="string"==typeof this.response?JSON.parse(this.response):this.response).url){var t=n.getElementsByTagName("script")[0],r=n.createElement("script");r.async=!0,r.src=e.url,t.parentNode.insertBefore(r,t)}}catch(e){}}var s,p,a,i=[],c=[];e[t]={init:function(){s=arguments;var e={then:function(n){return c.push({type:"t",next:n}),e},catch:function(n){return c.push({type:"c",next:n}),e}};return e},on:function(){i.push(arguments)},render:function(){p=arguments},destroy:function(){a=arguments}},e.__onWebMessengerHostReady__=function(n){if(delete e.__onWebMessengerHostReady__,e[t]=n,s)for(var r=n.init.apply(n,s),o=0;o<c.length;o++){var u=c[o];r="t"===u.type?r.then(u.next):r.catch(u.next)}p&&n.render.apply(n,p),a&&n.destroy.apply(n,a);for(o=0;o<i.length;o++)n.on.apply(n,i[o])};var u=new XMLHttpRequest;u.addEventListener("load",o),u.open("GET","https://"+r+".webloader.smooch.io/",!0),u.responseType="json",u.send()
-  }(window,document,"Smooch", appId);
-
-  inputElement.onkeyup = function(e) {
-    if (e.key === 'Enter') {
-      Smooch.sendMessage(inputElement.value)
-        .then(function() {
-          inputElement.value = '';
-
-          // update the user ID
-          displayUserId(Smooch.getUser());
-        });
-    }
-  }
-
-  // display new messages
-  Smooch.on('message:sent', displayMessage);
-  Smooch.on('message:received', displayMessage);
-
-  // initialize Smooch and render the UI in a hidden element
-  Smooch.init({ appId: appId, embedded: true })
-    .then(function () {
-      // displays initial messages
-      var conversation = Smooch.getConversation();
-      conversation.messages.forEach(displayMessage);
-
-      // display user ID if user currently exists
-      var user = Smooch.getUser();
-      displayUserId(user);
-    });
-
-  Smooch.render(document.getElementById('no-display'));
-
-  function displayMessage(message) {
-    var conversationElement = document.getElementById('conversation');
-    var messageElement = document.createElement('li');
-    messageElement.innerText = message.name + ' says "' + message.text + '"';
-    conversationElement.appendChild(messageElement);
-  }
-
-  function displayUserId(user) {
-    document.getElementById('user-id').innerText = user ? user._id : 'None';
-  }
-  </script>
-</body>
-</html>
-```
+You can find the complete code for this guide here: [index.html](index.html).
